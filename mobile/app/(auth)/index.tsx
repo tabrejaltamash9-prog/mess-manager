@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,14 +10,80 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Modal,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Colors, Spacing, Radius, Typography, Shadow } from '../../constants/theme';
-import { api } from '../../lib/api';
+import { api, getServerUrl, setServerUrl, resetServerUrl, DEFAULT_SERVER_URL } from '../../lib/api';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Server URL settings
+  const [activeServerUrl, setActiveServerUrl] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [inputUrl, setInputUrl] = useState('');
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  useEffect(() => {
+    loadServerUrl();
+  }, []);
+
+  async function loadServerUrl() {
+    const url = await getServerUrl();
+    setActiveServerUrl(url);
+    setInputUrl(url);
+  }
+
+  async function handleTestConnection(urlToTest: string) {
+    const clean = urlToTest.trim().replace(/\/+$/, '');
+    if (!clean) {
+      setTestResult({ success: false, message: 'Please enter a server URL.' });
+      return;
+    }
+    setTestingConnection(true);
+    setTestResult(null);
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(`${clean}/health`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        setTestResult({ success: true, message: 'Connected successfully!' });
+      } else {
+        setTestResult({ success: false, message: `Server replied with HTTP ${res.status}` });
+      }
+    } catch (err: any) {
+      setTestResult({
+        success: false,
+        message: err.name === 'AbortError' ? 'Connection timed out (5s).' : 'Could not reach server.',
+      });
+    } finally {
+      setTestingConnection(false);
+    }
+  }
+
+  async function handleSaveServerUrl() {
+    const clean = inputUrl.trim().replace(/\/+$/, '');
+    if (!clean) {
+      Alert.alert('Error', 'Server URL cannot be empty.');
+      return;
+    }
+    await setServerUrl(clean);
+    setActiveServerUrl(clean);
+    setModalVisible(false);
+    setTestResult(null);
+    Alert.alert('Saved', `Server URL set to:\n${clean}`);
+  }
+
+  async function handleResetServerUrl() {
+    const defaultUrl = await resetServerUrl();
+    setActiveServerUrl(defaultUrl);
+    setInputUrl(defaultUrl);
+    setTestResult(null);
+  }
 
   async function handleSendOtp() {
     const trimmed = email.trim().toLowerCase();
@@ -31,7 +97,26 @@ export default function LoginScreen() {
       await api.requestOtp(trimmed);
       router.push({ pathname: '/(auth)/otp', params: { email: trimmed } });
     } catch (err: any) {
-      Alert.alert('Error', err.message ?? 'Failed to send OTP. Please try again.');
+      const msg = err.message ?? 'Failed to send OTP. Please try again.';
+      if (msg.includes('Cannot reach backend server') || msg.includes('Network request failed')) {
+        Alert.alert(
+          'Connection Failed',
+          `${msg}\n\nWould you like to change your Server URL?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Configure Server',
+              onPress: () => {
+                setInputUrl(activeServerUrl);
+                setTestResult(null);
+                setModalVisible(true);
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Error', msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -94,11 +179,114 @@ export default function LoginScreen() {
           </Text>
         </View>
 
+        {/* Server Settings Pill Button */}
+        <TouchableOpacity
+          style={styles.serverPill}
+          onPress={() => {
+            setInputUrl(activeServerUrl);
+            setTestResult(null);
+            setModalVisible(true);
+          }}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.serverPillIcon}>⚙️</Text>
+          <Text style={styles.serverPillText} numberOfLines={1}>
+            Server: {activeServerUrl || 'Not configured'}
+          </Text>
+        </TouchableOpacity>
+
         {/* Footer */}
         <Text style={styles.footer}>
           Only registered college emails are accepted.{'\n'}Contact admin if you're unable to log in.
         </Text>
       </ScrollView>
+
+      {/* Server URL Configuration Modal */}
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>⚙️ Server Configuration</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Text style={styles.modalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalSubtitle}>
+              Enter your backend API URL (e.g. Render public URL, local Wi-Fi IP, or tunnel).
+            </Text>
+
+            <Text style={styles.label}>Backend URL</Text>
+            <TextInput
+              style={styles.input}
+              value={inputUrl}
+              onChangeText={(txt) => {
+                setInputUrl(txt);
+                setTestResult(null);
+              }}
+              placeholder="https://your-backend.onrender.com"
+              placeholderTextColor={Colors.gray400}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+            />
+
+            {/* Test Connection Status */}
+            {testResult && (
+              <View
+                style={[
+                  styles.testResultBox,
+                  testResult.success ? styles.testSuccess : styles.testError,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.testResultText,
+                    testResult.success ? styles.testSuccessText : styles.testErrorText,
+                  ]}
+                >
+                  {testResult.success ? '✅ ' : '❌ '}
+                  {testResult.message}
+                </Text>
+              </View>
+            )}
+
+            {/* Modal Buttons */}
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.btnOutline, testingConnection && styles.buttonDisabled]}
+                onPress={() => handleTestConnection(inputUrl)}
+                disabled={testingConnection}
+              >
+                {testingConnection ? (
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                ) : (
+                  <Text style={styles.btnOutlineText}>Test Connection</Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.btnPrimary} onPress={handleSaveServerUrl}>
+                <Text style={styles.btnPrimaryText}>Save & Apply</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={styles.btnReset}
+              onPress={handleResetServerUrl}
+            >
+              <Text style={styles.btnResetText}>Reset to Default ({DEFAULT_SERVER_URL})</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -207,5 +395,146 @@ const styles = StyleSheet.create({
     color: Colors.gray400,
     textAlign: 'center',
     lineHeight: 18,
+  },
+
+  serverPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.gray100,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.full ?? 999,
+    marginBottom: Spacing.lg,
+    maxWidth: '90%',
+  },
+
+  serverPillIcon: {
+    fontSize: 13,
+    marginRight: Spacing.xs,
+  },
+
+  serverPillText: {
+    ...Typography.tiny,
+    color: Colors.gray600,
+    fontWeight: '500',
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'flex-end',
+  },
+
+  modalCard: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: Spacing.xl,
+    paddingBottom: 40,
+    ...Shadow.lg,
+  },
+
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+
+  modalTitle: {
+    ...Typography.h3,
+    color: Colors.black,
+  },
+
+  modalClose: {
+    fontSize: 20,
+    color: Colors.gray400,
+    padding: Spacing.xs,
+  },
+
+  modalSubtitle: {
+    ...Typography.caption,
+    color: Colors.gray500,
+    marginBottom: Spacing.lg,
+    lineHeight: 18,
+  },
+
+  testResultBox: {
+    padding: Spacing.sm,
+    borderRadius: Radius.md,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+  },
+
+  testSuccess: {
+    backgroundColor: Colors.successLight,
+    borderColor: Colors.success,
+  },
+
+  testError: {
+    backgroundColor: Colors.errorLight,
+    borderColor: Colors.error,
+  },
+
+  testResultText: {
+    ...Typography.caption,
+    fontWeight: '500',
+  },
+
+  testSuccessText: {
+    color: Colors.successDark,
+  },
+
+  testErrorText: {
+    color: Colors.errorDark,
+  },
+
+  modalActions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+
+  btnOutline: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    borderRadius: Radius.md,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  btnOutlineText: {
+    ...Typography.bodyMd,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+
+  btnPrimary: {
+    flex: 1,
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.md,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  btnPrimaryText: {
+    ...Typography.bodyMd,
+    color: Colors.white,
+    fontWeight: '600',
+  },
+
+  btnReset: {
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+
+  btnResetText: {
+    ...Typography.tiny,
+    color: Colors.gray500,
+    textDecorationLine: 'underline',
   },
 });

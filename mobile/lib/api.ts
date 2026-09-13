@@ -1,6 +1,36 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../store/authStore';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
+export const SERVER_URL_STORAGE_KEY = 'mess_app_server_url';
+export const DEFAULT_SERVER_URL =
+  process.env.EXPO_PUBLIC_API_URL ?? 'http://10.251.131.177:3000';
+
+let cachedServerUrl: string | null = null;
+
+export async function getServerUrl(): Promise<string> {
+  if (cachedServerUrl) return cachedServerUrl;
+  try {
+    const saved = await AsyncStorage.getItem(SERVER_URL_STORAGE_KEY);
+    if (saved && saved.trim()) {
+      cachedServerUrl = saved.trim().replace(/\/+$/, '');
+      return cachedServerUrl;
+    }
+  } catch {}
+  return DEFAULT_SERVER_URL.replace(/\/+$/, '');
+}
+
+export async function setServerUrl(url: string): Promise<void> {
+  const clean = url.trim().replace(/\/+$/, '');
+  cachedServerUrl = clean;
+  await AsyncStorage.setItem(SERVER_URL_STORAGE_KEY, clean);
+}
+
+export async function resetServerUrl(): Promise<string> {
+  const url = DEFAULT_SERVER_URL.replace(/\/+$/, '');
+  cachedServerUrl = url;
+  await AsyncStorage.removeItem(SERVER_URL_STORAGE_KEY);
+  return url;
+}
 
 async function request<T>(
   path: string,
@@ -8,6 +38,7 @@ async function request<T>(
   requiresAuth = true
 ): Promise<T> {
   const { accessToken, refreshToken, setTokens, logout } = useAuthStore.getState();
+  const baseUrl = await getServerUrl();
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -18,22 +49,34 @@ async function request<T>(
     headers['Authorization'] = `Bearer ${accessToken}`;
   }
 
-  let response = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  let response: Response;
+  try {
+    response = await fetch(`${baseUrl}${path}`, { ...options, headers });
+  } catch (err: any) {
+    throw new Error(
+      `Cannot reach backend server at:\n${baseUrl}\n\nMake sure your backend is running or update the Server URL in settings below.`
+    );
+  }
 
   // If access token expired, try to refresh once
   if (response.status === 401 && refreshToken && requiresAuth) {
-    const refreshResponse = await fetch(`${BASE_URL}/api/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    });
+    try {
+      const refreshResponse = await fetch(`${baseUrl}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
 
-    if (refreshResponse.ok) {
-      const { accessToken: newAccess, refreshToken: newRefresh } = await refreshResponse.json();
-      setTokens(newAccess, newRefresh);
-      headers['Authorization'] = `Bearer ${newAccess}`;
-      response = await fetch(`${BASE_URL}${path}`, { ...options, headers });
-    } else {
+      if (refreshResponse.ok) {
+        const { accessToken: newAccess, refreshToken: newRefresh } = await refreshResponse.json();
+        setTokens(newAccess, newRefresh);
+        headers['Authorization'] = `Bearer ${newAccess}`;
+        response = await fetch(`${baseUrl}${path}`, { ...options, headers });
+      } else {
+        logout();
+        throw new Error('Session expired. Please log in again.');
+      }
+    } catch {
       logout();
       throw new Error('Session expired. Please log in again.');
     }
