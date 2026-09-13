@@ -19,8 +19,9 @@ The Node.js backend is configured to be easily deployed to Render.
 2. Create a new **Web Service**.
 3. Choose the repository (`mess-manager`).
 4. Set the Root Directory to `backend`.
-5. Render will automatically detect the settings from `render.yaml` (Node.js runtime, build command: `npm install && npm run build`, start command: `npm start`).
-6. Add the following Environment Variables in the Render dashboard:
+5. Under Settings, set the **Build Command** to: `npm install; npm run build`
+6. Set the **Start Command** to: `npm start`
+7. Add the following Environment Variables in the Render dashboard:
    - `PORT`: `3000`
    - `NODE_ENV`: `production`
    - `JWT_SECRET`: A strong random string
