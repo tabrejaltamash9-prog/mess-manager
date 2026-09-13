@@ -28,13 +28,19 @@ jobs:
 
       - name: Build Android APK (preview profile)
         working-directory: mobile
-        run: eas build --platform android --profile preview --non-interactive --output ./mess-qr-app-android.apk
+        run: |
+          eas build --platform android --profile preview --non-interactive
+          eas build:download --platform android --latest
+          mv *.apk mess-qr-app-android.apk
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Build iOS Simulator (preview profile)
         working-directory: mobile
-        run: eas build --platform ios --profile preview --non-interactive --output ./mess-qr-app-ios.tar.gz
+        run: |
+          eas build --platform ios --profile preview --non-interactive
+          eas build:download --platform ios --latest
+          mv *.tar.gz mess-qr-app-ios.tar.gz
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
