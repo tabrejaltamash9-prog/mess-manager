@@ -33,7 +33,7 @@ const envSchema = z.object({
   // OTP config
   OTP_EXPIRY_MINUTES: z.string().default('5'),
   OTP_MAX_ATTEMPTS: z.string().default('5'),
-  OTP_RATE_LIMIT_PER_HOUR: z.string().default('5'),
+  OTP_RATE_LIMIT_PER_HOUR: z.string().default('20'),
 
   // CORS
   CORS_ORIGIN: z.string().default('*'),

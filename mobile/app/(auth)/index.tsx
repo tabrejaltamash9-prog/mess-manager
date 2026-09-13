@@ -98,21 +98,30 @@ export default function LoginScreen() {
       router.push({ pathname: '/(auth)/otp', params: { email: trimmed } });
     } catch (err: any) {
       const msg = err.message ?? 'Failed to send OTP. Please try again.';
-      Alert.alert(
-        'Unable to Send OTP',
-        `${msg}\n\nWould you like to check or change your Server URL?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: '⚙️ Configure Server',
-            onPress: () => {
-              setInputUrl(activeServerUrl);
-              setTestResult(null);
-              setModalVisible(true);
+      const isNetworkErr =
+        msg.includes('Cannot reach') ||
+        msg.includes('Connection timed out') ||
+        msg.includes('Network request failed');
+
+      if (isNetworkErr) {
+        Alert.alert(
+          'Connection Failed',
+          `${msg}\n\nWould you like to check or change your Server URL?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: '⚙️ Configure Server',
+              onPress: () => {
+                setInputUrl(activeServerUrl);
+                setTestResult(null);
+                setModalVisible(true);
+              },
             },
-          },
-        ]
-      );
+          ]
+        );
+      } else {
+        Alert.alert('Notice', msg);
+      }
     } finally {
       setLoading(false);
     }
