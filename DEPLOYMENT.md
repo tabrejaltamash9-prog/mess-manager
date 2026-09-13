@@ -22,15 +22,17 @@ The Node.js backend is configured to be easily deployed to Render.
 5. Under Settings, set the **Build Command** to: `npm install; npm run build`
 6. Set the **Start Command** to: `npm start`
 7. Add the following Environment Variables in the Render dashboard:
-   - `PORT`: `3000`
+   - `PORT`: `10000`
    - `NODE_ENV`: `production`
-   - `JWT_SECRET`: A strong random string
-   - `HMAC_SECRET`: A strong random string for QR signatures
-   - `REDIS_URL`: The internal or external URL to a Redis instance (you can create a Redis instance on Render).
-   - `SUPABASE_URL`: Your Supabase project URL.
-   - `SUPABASE_SERVICE_KEY`: Your Supabase service role key.
-   - `SMTP_USER`: Your Gmail address (e.g., `you@gmail.com`).
-   - `SMTP_PASS`: Your Google App Password.
+   - `JWT_ACCESS_SECRET`: A strong random string (min 32 chars)
+   - `JWT_REFRESH_SECRET`: Another strong random string (min 32 chars)
+   - `QR_HMAC_SECRET`: A strong random string for QR signatures (min 32 chars)
+   - `UPSTASH_REDIS_REST_URL`: Your Upstash Redis REST URL
+   - `UPSTASH_REDIS_REST_TOKEN`: Your Upstash Redis REST Token
+   - `SUPABASE_URL`: Your Supabase project URL
+   - `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key
+   - `GMAIL_USER`: Your Gmail address (e.g., `you@gmail.com`)
+   - `GMAIL_APP_PASSWORD`: Your Google App Password
 
 > [!IMPORTANT]
 > To use Gmail for SMTP, you must generate an **App Password** in your Google Account settings (Security -> 2-Step Verification -> App Passwords).
