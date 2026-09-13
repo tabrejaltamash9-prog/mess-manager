@@ -81,7 +81,7 @@ To log in to the admin dashboard, you need an admin user in the database. Since 
 Go to the Supabase **SQL Editor** and run:
 
 ```sql
-INSERT INTO users (id, name, email, role, is_active)
+INSERT INTO staff (id, name, email, role, is_active)
 VALUES (
   gen_random_uuid(),
   'Super Admin',
