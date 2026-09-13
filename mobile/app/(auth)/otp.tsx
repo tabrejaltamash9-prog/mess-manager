@@ -76,7 +76,7 @@ export default function OtpScreen() {
         id: result.user.id,
         name: result.user.name,
         email: result.user.email,
-        role: result.role,
+        role: result.role as 'student' | 'mess_staff' | 'admin',
         roll_no: result.user.roll_no,
         department: result.user.department,
         hostel_block: result.user.hostel_block,

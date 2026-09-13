@@ -122,7 +122,7 @@ export default function StaffScanner() {
     <View style={styles.flex}>
       {/* Camera */}
       <CameraView
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
         facing="back"
         enableTorch={torchOn}
         onBarcodeScanned={scanning ? handleBarCodeScanned : undefined}
