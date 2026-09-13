@@ -49,13 +49,27 @@ async function request<T>(
     headers['Authorization'] = `Bearer ${accessToken}`;
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
   let response: Response;
   try {
-    response = await fetch(`${baseUrl}${path}`, { ...options, headers });
+    response = await fetch(`${baseUrl}${path}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
   } catch (err: any) {
+    if (err.name === 'AbortError') {
+      throw new Error(
+        `Connection timed out reaching:\n${baseUrl}\n\nPlease check your Server URL or internet connection.`
+      );
+    }
     throw new Error(
-      `Cannot reach backend server at:\n${baseUrl}\n\nMake sure your backend is running or update the Server URL in settings below.`
+      `Cannot reach backend server at:\n${baseUrl}\n\nPlease check your Server URL or internet connection.`
     );
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   // If access token expired, try to refresh once

@@ -98,25 +98,21 @@ export default function LoginScreen() {
       router.push({ pathname: '/(auth)/otp', params: { email: trimmed } });
     } catch (err: any) {
       const msg = err.message ?? 'Failed to send OTP. Please try again.';
-      if (msg.includes('Cannot reach backend server') || msg.includes('Network request failed')) {
-        Alert.alert(
-          'Connection Failed',
-          `${msg}\n\nWould you like to change your Server URL?`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Configure Server',
-              onPress: () => {
-                setInputUrl(activeServerUrl);
-                setTestResult(null);
-                setModalVisible(true);
-              },
+      Alert.alert(
+        'Unable to Send OTP',
+        `${msg}\n\nWould you like to check or change your Server URL?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: '⚙️ Configure Server',
+            onPress: () => {
+              setInputUrl(activeServerUrl);
+              setTestResult(null);
+              setModalVisible(true);
             },
-          ]
-        );
-      } else {
-        Alert.alert('Error', msg);
-      }
+          },
+        ]
+      );
     } finally {
       setLoading(false);
     }
@@ -127,6 +123,23 @@ export default function LoginScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      {/* Top Header Bar with Prominent Settings Button */}
+      <View style={styles.topHeader}>
+        <View style={{ flex: 1 }} />
+        <TouchableOpacity
+          style={styles.topSettingsBtn}
+          onPress={() => {
+            setInputUrl(activeServerUrl);
+            setTestResult(null);
+            setModalVisible(true);
+          }}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.topSettingsIcon}>⚙️</Text>
+          <Text style={styles.topSettingsText}>Server URL</Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         {/* Hero */}
         <View style={styles.hero}>
@@ -143,6 +156,25 @@ export default function LoginScreen() {
           <Text style={styles.cardSubtitle}>
             Enter your college email to receive a login code
           </Text>
+
+          {/* Active Server URL Banner */}
+          <TouchableOpacity
+            style={styles.serverCardBanner}
+            onPress={() => {
+              setInputUrl(activeServerUrl);
+              setTestResult(null);
+              setModalVisible(true);
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.serverCardBannerContent}>
+              <Text style={styles.serverCardBannerLabel}>🌐 Connected to:</Text>
+              <Text style={styles.serverCardBannerUrl} numberOfLines={1}>
+                {activeServerUrl || 'Tap to configure server'}
+              </Text>
+            </View>
+            <Text style={styles.serverCardBannerEdit}>Change ⚙️</Text>
+          </TouchableOpacity>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>College Email</Text>
@@ -178,22 +210,6 @@ export default function LoginScreen() {
             📧 A 6-digit code will be sent to your email
           </Text>
         </View>
-
-        {/* Server Settings Pill Button */}
-        <TouchableOpacity
-          style={styles.serverPill}
-          onPress={() => {
-            setInputUrl(activeServerUrl);
-            setTestResult(null);
-            setModalVisible(true);
-          }}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.serverPillIcon}>⚙️</Text>
-          <Text style={styles.serverPillText} numberOfLines={1}>
-            Server: {activeServerUrl || 'Not configured'}
-          </Text>
-        </TouchableOpacity>
 
         {/* Footer */}
         <Text style={styles.footer}>
@@ -294,10 +310,79 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: Colors.background },
 
+  topHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingHorizontal: Spacing.md,
+    paddingTop: Platform.OS === 'ios' ? 50 : 36,
+    paddingBottom: Spacing.xs,
+  },
+
+  topSettingsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.gray200,
+    ...Shadow.sm,
+  },
+
+  topSettingsIcon: {
+    fontSize: 13,
+    marginRight: 5,
+  },
+
+  topSettingsText: {
+    ...Typography.tiny,
+    color: Colors.gray700,
+    fontWeight: '600',
+  },
+
+  serverCardBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.primaryLight,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
+    marginBottom: Spacing.lg,
+  },
+
+  serverCardBannerContent: {
+    flex: 1,
+    marginRight: Spacing.sm,
+  },
+
+  serverCardBannerLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.primaryDark,
+    marginBottom: 2,
+  },
+
+  serverCardBannerUrl: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.primaryDark,
+  },
+
+  serverCardBannerEdit: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+
   container: {
     flexGrow: 1,
     padding: Spacing.lg,
-    paddingTop: 60,
+    paddingTop: 10,
     alignItems: 'center',
   },
 
