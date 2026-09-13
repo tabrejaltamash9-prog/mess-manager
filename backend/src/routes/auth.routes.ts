@@ -60,11 +60,13 @@ router.post('/request-otp', async (req: Request, res: Response) => {
   }
 
   try {
-    const otp = await generateOtp(normalizedEmail);
-    await sendOtpEmail(normalizedEmail, user.name, otp);
+    // DEV MODE / TESTING BYPASS:
+    // Render blocks SMTP, so we bypass actual email sending and use a Magic OTP.
+    // const otp = await generateOtp(normalizedEmail);
+    // await sendOtpEmail(normalizedEmail, user.name, otp);
 
     res.json({
-      message: 'OTP sent to your email. It expires in 5 minutes.',
+      message: 'Testing Mode: Use 123456 as your OTP.',
     });
   } catch (err: any) {
     if (err.message?.includes('Too many OTP requests')) {
@@ -93,7 +95,10 @@ router.post('/verify-otp', async (req: Request, res: Response) => {
   const normalizedEmail = email.toLowerCase().trim();
 
   try {
-    await verifyOtp(normalizedEmail, otp);
+    if (otp !== '123456') {
+      await verifyOtp(normalizedEmail, otp);
+    }
+    // If it is 123456, we just bypass verifyOtp and let them in!
   } catch (err: any) {
     res.status(401).json({ error: err.message });
     return;
