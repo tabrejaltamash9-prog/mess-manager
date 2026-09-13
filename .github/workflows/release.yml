@@ -24,7 +24,7 @@ jobs:
 
       - name: Install mobile dependencies
         working-directory: mobile
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Build Android APK (preview profile)
         working-directory: mobile
