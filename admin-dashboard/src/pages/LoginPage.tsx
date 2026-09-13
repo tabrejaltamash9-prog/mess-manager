@@ -36,7 +36,7 @@ export default function LoginPage() {
         setError('This portal is for admin and mess staff only.');
         return;
       }
-      login(result.accessToken, result.user, result.role);
+      login(result.accessToken, result.refreshToken, result.user, result.role);
       navigate('/');
     } catch (err: any) {
       setError(err.message);

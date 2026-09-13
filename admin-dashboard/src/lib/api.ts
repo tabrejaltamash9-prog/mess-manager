@@ -4,7 +4,23 @@ function getToken() {
   return localStorage.getItem('mess_admin_token');
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+function getRefreshToken() {
+  return localStorage.getItem('mess_admin_refresh_token');
+}
+
+let isRefreshing = false;
+let refreshSubscribers: Array<(token: string) => void> = [];
+
+function subscribeTokenRefresh(cb: (token: string) => void) {
+  refreshSubscribers.push(cb);
+}
+
+function onRefreshed(token: string) {
+  refreshSubscribers.forEach((cb) => cb(token));
+  refreshSubscribers = [];
+}
+
+async function request<T>(path: string, options: RequestInit = {}, isRetry = false): Promise<T> {
   const token = getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -12,8 +28,69 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
-  const data = await res.json();
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  } catch (netErr: any) {
+    throw new Error(`Failed to connect to backend server (${BASE_URL}). Please verify it is running.`);
+  }
+
+  // If unauthorized and we haven't retried yet, attempt silent refresh
+  if (res.status === 401 && !isRetry && !path.startsWith('/api/auth/')) {
+    const refreshToken = getRefreshToken();
+
+    if (refreshToken) {
+      if (isRefreshing) {
+        return new Promise<T>((resolve) => {
+          subscribeTokenRefresh(() => {
+            resolve(request<T>(path, options, true));
+          });
+        });
+      }
+
+      isRefreshing = true;
+
+      try {
+        const refreshRes = await fetch(`${BASE_URL}/api/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        if (refreshRes.ok) {
+          const data = await refreshRes.json();
+          localStorage.setItem('mess_admin_token', data.accessToken);
+          if (data.refreshToken) {
+            localStorage.setItem('mess_admin_refresh_token', data.refreshToken);
+          }
+          isRefreshing = false;
+          onRefreshed(data.accessToken);
+          return request<T>(path, options, true);
+        } else {
+          // Refresh token expired or revoked
+          isRefreshing = false;
+          localStorage.removeItem('mess_admin_token');
+          localStorage.removeItem('mess_admin_refresh_token');
+          localStorage.removeItem('mess_admin_user');
+          localStorage.removeItem('mess_admin_role');
+          window.location.href = '/login';
+          throw new Error('Your session has expired. Please sign in again.');
+        }
+      } catch (err: any) {
+        isRefreshing = false;
+        throw err;
+      }
+    } else {
+      // No refresh token available, redirect to login
+      localStorage.removeItem('mess_admin_token');
+      localStorage.removeItem('mess_admin_user');
+      localStorage.removeItem('mess_admin_role');
+      window.location.href = '/login';
+      throw new Error('Your session has expired. Please sign in again.');
+    }
+  }
+
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error ?? `Request failed: ${res.status}`);
   return data as T;
 }
