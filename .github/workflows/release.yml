@@ -31,7 +31,13 @@ jobs:
 
       - name: Build Android APK (preview profile)
         working-directory: mobile
-        run: eas build --platform android --profile preview --non-interactive --output ./release.apk
+        run: eas build --platform android --profile preview --non-interactive --output ./mess-qr-app-android.apk
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build iOS Simulator (preview profile)
+        working-directory: mobile
+        run: eas build --platform ios --profile preview --non-interactive --output ./mess-qr-app-ios.tar.gz
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
@@ -43,14 +49,20 @@ jobs:
           body: |
             ## 📦 Mess QR App ${{ github.ref_name }}
 
-            ### Installation
-            1. Download `mess-qr-app.apk` below
+            ### Android Installation
+            1. Download `mess-qr-app-android.apk` below
             2. Enable "Install from unknown sources" on your Android device
             3. Install the APK
 
+            ### iOS Simulator Installation
+            1. Download `mess-qr-app-ios.tar.gz` below and extract it
+            2. Drag and drop the `.app` file into your running iOS Simulator
+
             ### What's New
             See commit history for changes in this release.
-          files: mobile/release.apk
+          files: |
+            mobile/mess-qr-app-android.apk
+            mobile/mess-qr-app-ios.tar.gz
           draft: false
           prerelease: false
         env:
