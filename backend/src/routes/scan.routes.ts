@@ -24,8 +24,9 @@ router.post('/verify', authorize('mess_staff', 'admin'), async (req: Request, re
 
   const result = await verifyScan(parsed.data.qr, req.user!.userId);
 
-  const statusCode = result.success ? 200 : 400;
-  res.status(statusCode).json(result);
+  // Always return 200 so the frontend can parse the business logic result (success/failure)
+  // and display the appropriate UI screen instead of throwing a raw HTTP error.
+  res.status(200).json(result);
 });
 
 // ── GET /api/scan/counter/:mealWindowId ───────────────────────────────────────

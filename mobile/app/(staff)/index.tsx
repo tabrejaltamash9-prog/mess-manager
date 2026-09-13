@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   Vibration,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, Radius, Typography } from '../../constants/theme';
 import { api } from '../../lib/api';
@@ -74,22 +74,24 @@ export default function StaffScanner() {
       if (currentWindowId) loadCounter(currentWindowId);
     } catch (err: any) {
       Alert.alert('Error', err.message ?? 'Scan failed. Try again.', [
-        { text: 'OK', onPress: () => { setScanning(true); scanCooldown.current = false; } },
+        { text: 'OK', onPress: () => { setScanning(true); scanCooldown.current = false; lastScanRef.current = ''; } },
       ]);
     }
   }
 
   // Resume scanning when coming back from result screen
-  useEffect(() => {
-    const resume = () => {
-      setScanning(true);
-      scanCooldown.current = false;
-      lastScanRef.current = '';
-    };
-    // Small delay to allow result screen to fully unmount
-    const t = setTimeout(resume, 500);
-    return () => clearTimeout(t);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const resume = () => {
+        setScanning(true);
+        scanCooldown.current = false;
+        lastScanRef.current = '';
+      };
+      // Small delay to allow result screen to fully unmount
+      const t = setTimeout(resume, 500);
+      return () => clearTimeout(t);
+    }, [])
+  );
 
   function handleLogout() {
     Alert.alert('Sign Out', 'Sign out of staff mode?', [
