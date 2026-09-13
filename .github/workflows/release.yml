@@ -29,8 +29,10 @@ jobs:
       - name: Build Android APK (preview profile)
         working-directory: mobile
         run: |
-          eas build --platform android --profile preview --non-interactive
-          eas build:download --platform android --latest
+          BUILD_JSON=$(eas build --platform android --profile preview --non-interactive --json)
+          BUILD_ID=$(echo "$BUILD_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
+          echo "Build ID: $BUILD_ID"
+          eas build:download --build-id "$BUILD_ID" --non-interactive
           mv *.apk mess-qr-app-android.apk
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
@@ -38,8 +40,10 @@ jobs:
       - name: Build iOS Simulator (preview profile)
         working-directory: mobile
         run: |
-          eas build --platform ios --profile preview --non-interactive
-          eas build:download --platform ios --latest
+          BUILD_JSON=$(eas build --platform ios --profile preview --non-interactive --json)
+          BUILD_ID=$(echo "$BUILD_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
+          echo "Build ID: $BUILD_ID"
+          eas build:download --build-id "$BUILD_ID" --non-interactive
           mv *.tar.gz mess-qr-app-ios.tar.gz
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
