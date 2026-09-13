@@ -8,7 +8,7 @@
     "scheme": "messqr",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#f9fafb"
     },
@@ -22,8 +22,9 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#f9fafb"
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "com.messqr.app",
       "permissions": [
@@ -44,19 +45,14 @@
           "cameraPermission": "Allow Mess QR to access your camera for scanning QR codes."
         }
       ],
-      [
-        "expo-brightness",
-        {
-          "locationWhenInUsePermission": "Allow Mess QR to adjust screen brightness for better QR visibility."
-        }
-      ]
+      "expo-brightness"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
       "eas": {
-        "projectId":"a3e278f9-8b27-47a5-8308-7050659325d7"
+        "projectId": "a3e278f9-8b27-47a5-8308-7050659325d7"
       }
     }
   }
