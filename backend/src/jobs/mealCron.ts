@@ -16,7 +16,7 @@ import { supabase } from '../config/supabase';
  */
 
 async function autoCreateTodayWindows(): Promise<void> {
-  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const today = new Date().toLocaleString('en-CA', { timeZone: 'Asia/Kolkata' }).slice(0, 10); // YYYY-MM-DD
 
   const { data: templates } = await supabase
     .from('meal_templates')

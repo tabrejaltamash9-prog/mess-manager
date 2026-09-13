@@ -12,7 +12,7 @@ router.use(authenticate);
 // Student: get the currently open (or upcoming) meal window + their signed QR
 router.get('/current', authorize('student'), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleString('en-CA', { timeZone: 'Asia/Kolkata' }).slice(0, 10);
 
   // Find open window first, then upcoming
   const { data: windows } = await supabase

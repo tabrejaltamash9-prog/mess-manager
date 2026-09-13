@@ -8,7 +8,7 @@ router.use(authenticate, authorize('admin'));
 // ── GET /api/reports/daily ────────────────────────────────────────────────────
 // Daily attendance summary for a given date (defaults to today)
 router.get('/daily', async (req: Request, res: Response) => {
-  const date = (req.query.date as string) ?? new Date().toISOString().slice(0, 10);
+  const date = (req.query.date as string) ?? new Date().toLocaleString('en-CA', { timeZone: 'Asia/Kolkata' }).slice(0, 10);
 
   const { data: windows, error } = await supabase
     .from('meal_windows')
@@ -26,7 +26,7 @@ router.get('/daily', async (req: Request, res: Response) => {
     .eq('is_active', true);
 
   // For each window, get count from hot table (today) or archive (past)
-  const isToday = date === new Date().toISOString().slice(0, 10);
+  const isToday = date === new Date().toLocaleString('en-CA', { timeZone: 'Asia/Kolkata' }).slice(0, 10);
   const table = isToday ? 'attendance' : 'attendance_archive';
 
   const results = await Promise.all(
