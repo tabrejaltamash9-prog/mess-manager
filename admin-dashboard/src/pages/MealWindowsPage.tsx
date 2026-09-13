@@ -66,6 +66,17 @@ export default function MealWindowsPage() {
     }
   }
 
+  async function handleDeleteWindow(id: string) {
+    if (!window.confirm('Are you sure you want to delete this meal window?')) return;
+    try {
+      await api.deleteWindow(id);
+      showAlert('success', 'Window deleted.');
+      load();
+    } catch (err: any) {
+      showAlert('error', err.message);
+    }
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setCreateLoading(true);
@@ -188,11 +199,16 @@ export default function MealWindowsPage() {
                     </span>
                   </td>
                   <td>
-                    {w.status === 'open' && (
-                      <button className="btn btn-danger btn-sm" onClick={() => handleCloseWindow(w.id)}>
-                        Close Early
+                    <div className="flex gap-2">
+                      {w.status === 'open' && (
+                        <button className="btn btn-warning btn-sm" onClick={() => handleCloseWindow(w.id)}>
+                          Close Early
+                        </button>
+                      )}
+                      <button className="btn btn-danger btn-sm" onClick={() => handleDeleteWindow(w.id)}>
+                        Delete
                       </button>
-                    )}
+                    </div>
                   </td>
                 </tr>
               ))}

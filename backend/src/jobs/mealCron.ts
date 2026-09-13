@@ -36,9 +36,9 @@ async function autoCreateTodayWindows(): Promise<void> {
 
     if (existing) continue;
 
-    // Build TIMESTAMPTZ from today's date + template time
-    const startTime = new Date(`${today}T${tmpl.start_time}`).toISOString();
-    const endTime = new Date(`${today}T${tmpl.end_time}`).toISOString();
+    // Build TIMESTAMPTZ from today's date + template time (forced to IST)
+    const startTime = new Date(`${today}T${tmpl.start_time}+05:30`).toISOString();
+    const endTime = new Date(`${today}T${tmpl.end_time}+05:30`).toISOString();
 
     await supabase.from('meal_windows').insert({
       meal_type: tmpl.meal_type,

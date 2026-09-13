@@ -130,6 +130,8 @@ export const api = {
     request('/api/meal/windows', { method: 'POST', body: JSON.stringify(data) }),
   updateWindow: (id: string, data: any) =>
     request(`/api/meal/windows/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteWindow: (id: string) =>
+    request(`/api/meal/windows/${id}`, { method: 'DELETE' }),
   getTemplates: () => request<any[]>('/api/meal/templates'),
   updateTemplate: (mealType: string, data: any) =>
     request(`/api/meal/templates/${mealType}`, { method: 'PUT', body: JSON.stringify(data) }),

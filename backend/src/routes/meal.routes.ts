@@ -100,8 +100,8 @@ router.post('/windows', authorize('admin'), async (req: Request, res: Response) 
     .insert({
       meal_type,
       date,
-      start_time: new Date(`${date}T${start_time}`).toISOString(),
-      end_time: new Date(`${date}T${end_time}`).toISOString(),
+      start_time: new Date(`${date}T${start_time}:00+05:30`).toISOString(),
+      end_time: new Date(`${date}T${end_time}:00+05:30`).toISOString(),
       status: 'upcoming',
       created_by: req.user!.userId,
     })
@@ -192,6 +192,24 @@ router.put('/templates/:meal_type', authorize('admin'), async (req: Request, res
   }
 
   res.json(data);
+});
+
+// ── DELETE /api/meal/windows/:id ──────────────────────────────────────────────
+// Admin: completely delete a meal window (useful for testing)
+router.delete('/windows/:id', authorize('admin'), async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const { error } = await supabase
+    .from('meal_windows')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    res.status(500).json({ error: 'Failed to delete meal window.' });
+    return;
+  }
+
+  res.json({ success: true, message: 'Meal window deleted.' });
 });
 
 export default router;
