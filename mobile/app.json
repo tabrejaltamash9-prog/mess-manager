@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "Mess QR",
+    "slug": "mess-qr",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "messqr",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f9fafb"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.messqr.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Camera is needed to scan student QR codes.",
+        "NSPhotoLibraryUsageDescription": "Photo library access for profile photo."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#f9fafb"
+      },
+      "package": "com.messqr.app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.VIBRATE"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Mess QR to access your camera for scanning QR codes."
+        }
+      ],
+      [
+        "expo-brightness",
+        {
+          "locationWhenInUsePermission": "Allow Mess QR to adjust screen brightness for better QR visibility."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-eas-project-id-here"
+      }
+    }
+  }
+}
