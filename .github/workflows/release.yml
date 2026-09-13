@@ -1,0 +1,57 @@
+name: Release Android APK
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'   # triggers on: git tag v1.0.0 && git push --tags
+
+jobs:
+  build-android:
+    name: Build Android APK via EAS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install mobile dependencies
+        working-directory: mobile
+        run: npm install
+
+      - name: Build Android APK (preview profile)
+        working-directory: mobile
+        run: eas build --platform android --profile preview --non-interactive --output ./release.apk
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Mess QR App ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          body: |
+            ## 📦 Mess QR App ${{ github.ref_name }}
+
+            ### Installation
+            1. Download `mess-qr-app.apk` below
+            2. Enable "Install from unknown sources" on your Android device
+            3. Install the APK
+
+            ### What's New
+            See commit history for changes in this release.
+          files: mobile/release.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
