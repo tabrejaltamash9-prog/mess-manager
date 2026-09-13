@@ -1,0 +1,78 @@
+name: Build iOS Simulator
+run-name: Build iOS Simulator (${{ github.ref_name }})
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'EAS build profile'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - preview
+          - development
+
+permissions:
+  contents: write
+
+jobs:
+  build-ios:
+    name: Build iOS Simulator via EAS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Install mobile dependencies
+        working-directory: mobile
+        run: npm install --legacy-peer-deps
+
+      - name: Build iOS Simulator
+        working-directory: mobile
+        run: |
+          BUILD_JSON=$(eas build --platform ios --profile ${{ inputs.profile }} --non-interactive --json)
+          BUILD_ID=$(echo "$BUILD_JSON" | python3 -c "import sys,json; data=json.load(sys.stdin); print(data[0]['id'] if isinstance(data, list) else data['id'])")
+          echo "Build ID: $BUILD_ID"
+
+          # 1. Try direct download from EAS artifacts URL
+          IOS_URL=$(echo "$BUILD_JSON" | python3 -c "import sys,json; data=json.load(sys.stdin); item=data[0] if isinstance(data, list) else data; print(item.get('artifacts', {}).get('applicationArchiveUrl') or '')" 2>/dev/null || echo "")
+          if [ -n "$IOS_URL" ] && [ "$IOS_URL" != "None" ]; then
+            echo "Downloading iOS build directly from $IOS_URL..."
+            curl -L -o mess-qr-app-ios.tar.gz "$IOS_URL"
+          fi
+
+          # 2. If direct download was not available, download via EAS CLI and copy from cache
+          if [ ! -s mess-qr-app-ios.tar.gz ]; then
+            echo "Downloading via eas build:download..."
+            eas build:download --build-id "$BUILD_ID" --non-interactive
+            IOS_CACHED=$(find /tmp -name "*.tar.gz" 2>/dev/null | head -n 1)
+            if [ -n "$IOS_CACHED" ]; then
+              echo "Found cached iOS build at $IOS_CACHED, copying..."
+              cp "$IOS_CACHED" mess-qr-app-ios.tar.gz
+            fi
+          fi
+
+          if [ ! -s mess-qr-app-ios.tar.gz ]; then
+            echo "Error: Failed to find or download mess-qr-app-ios.tar.gz"
+            exit 1
+          fi
+          echo "Successfully prepared mess-qr-app-ios.tar.gz:"
+          ls -lh mess-qr-app-ios.tar.gz
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Upload iOS Simulator Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mess-qr-app-ios
+          path: mobile/mess-qr-app-ios.tar.gz

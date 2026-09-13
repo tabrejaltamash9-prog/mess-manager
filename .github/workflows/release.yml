@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*.*.*'   # triggers on: git tag v1.0.0 && git push --tags
 
+permissions:
+  contents: write
+
 jobs:
   build-android:
     name: Build Android APK via EAS
@@ -30,21 +33,34 @@ jobs:
         working-directory: mobile
         run: |
           BUILD_JSON=$(eas build --platform android --profile preview --non-interactive --json)
-          BUILD_ID=$(echo "$BUILD_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
+          BUILD_ID=$(echo "$BUILD_JSON" | python3 -c "import sys,json; data=json.load(sys.stdin); print(data[0]['id'] if isinstance(data, list) else data['id'])")
           echo "Build ID: $BUILD_ID"
-          eas build:download --build-id "$BUILD_ID" --non-interactive
-          mv *.apk mess-qr-app-android.apk
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Build iOS Simulator (preview profile)
-        working-directory: mobile
-        run: |
-          BUILD_JSON=$(eas build --platform ios --profile preview --non-interactive --json)
-          BUILD_ID=$(echo "$BUILD_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
-          echo "Build ID: $BUILD_ID"
-          eas build:download --build-id "$BUILD_ID" --non-interactive
-          mv *.tar.gz mess-qr-app-ios.tar.gz
+          # 1. Try direct download from EAS artifacts URL if available
+          APK_URL=$(echo "$BUILD_JSON" | python3 -c "import sys,json; data=json.load(sys.stdin); item=data[0] if isinstance(data, list) else data; print(item.get('artifacts', {}).get('applicationArchiveUrl') or '')" 2>/dev/null || echo "")
+          if [ -n "$APK_URL" ] && [ "$APK_URL" != "None" ]; then
+            echo "Downloading APK directly from $APK_URL..."
+            curl -L -o mess-qr-app-android.apk "$APK_URL"
+          fi
+
+          # 2. If direct download was not available, download via EAS CLI and copy from cache
+          if [ ! -s mess-qr-app-android.apk ]; then
+            echo "Downloading via eas build:download..."
+            eas build:download --build-id "$BUILD_ID" --non-interactive
+            APK_CACHED=$(find /tmp -name "*.apk" 2>/dev/null | head -n 1)
+            if [ -n "$APK_CACHED" ]; then
+              echo "Found cached APK at $APK_CACHED, copying..."
+              cp "$APK_CACHED" mess-qr-app-android.apk
+            fi
+          fi
+
+          # 3. Verify the file exists and is not empty
+          if [ ! -s mess-qr-app-android.apk ]; then
+            echo "Error: Failed to find or download mess-qr-app-android.apk"
+            exit 1
+          fi
+          echo "Successfully prepared mess-qr-app-android.apk:"
+          ls -lh mess-qr-app-android.apk
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
@@ -61,15 +77,11 @@ jobs:
             2. Enable "Install from unknown sources" on your Android device
             3. Install the APK
 
-            ### iOS Simulator Installation
-            1. Download `mess-qr-app-ios.tar.gz` below and extract it
-            2. Drag and drop the `.app` file into your running iOS Simulator
-
             ### What's New
             See commit history for changes in this release.
           files: |
             mobile/mess-qr-app-android.apk
-            mobile/mess-qr-app-ios.tar.gz
+          fail_on_unmatched_files: false
           draft: false
           prerelease: false
         env:

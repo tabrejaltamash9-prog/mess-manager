@@ -49,12 +49,12 @@ The React Admin Dashboard is a Vite app that deploys easily to Vercel.
    - `VITE_API_URL`: The URL of your deployed Render backend (e.g., `https://mess-manager-backend.onrender.com`).
 6. Click Deploy.
 
-## 4. GitHub Actions (Mobile App APK & iOS Build)
+## 4. GitHub Actions (Mobile App APK Build)
 
-The mobile app automatically builds whenever you create a new GitHub Release tag. It uses Expo Application Services (EAS) to build the apps in the cloud.
+The mobile app APK automatically builds whenever you create and push a new GitHub Release tag. It uses Expo Application Services (EAS) to build the APK in the cloud.
 
 1. Create an account at [Expo](https://expo.dev) if you don't have one.
-2. In the `mobile/app.json`, replace `"your-eas-project-id-here"` with your actual Expo Project ID (create a project in the Expo dashboard).
+2. Ensure `mobile/app.json` has your actual Expo Project ID and matching slug.
 3. Generate an Expo Access Token in your Expo Account Settings.
 4. Go to your GitHub repository **Settings -> Secrets and variables -> Actions**.
 5. Add a new Repository Secret named `EXPO_TOKEN` and paste your Expo token.
@@ -62,15 +62,17 @@ The mobile app automatically builds whenever you create a new GitHub Release tag
 
 ### Triggering a Build
 
-To trigger a build and publish the APK/iOS Simulator build to GitHub Releases:
+To trigger an automated build and publish the Android APK to GitHub Releases:
 
 1. Create a new tag locally and push it:
    ```bash
    git tag v1.0.0
    git push origin v1.0.0
    ```
-2. The GitHub Action will start building the Android APK and iOS Simulator build. You can check the progress in the **Actions** tab on GitHub.
-3. Once completed, a new GitHub Release will be created with the `mess-qr-app-android.apk` and `mess-qr-app-ios.tar.gz` files attached.
+2. The GitHub Action will automatically build the Android APK. You can check the progress in the **Actions** tab on GitHub.
+3. Once completed (~8-9 minutes), a new GitHub Release will be created with `mess-qr-app-android.apk` attached and ready for download!
+
+*(Note: For iOS Simulator builds, you can manually run the **Build iOS Simulator** action from the GitHub Actions tab at any time.)*
 
 ## 5. Adding the First Admin
 
